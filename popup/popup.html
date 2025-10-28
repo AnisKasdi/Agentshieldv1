@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AgentShield</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="head">
+      <div>
+        <h1>AgentShield</h1>
+        <p class="subtitle">IA Safety quick-scan</p>
+      </div>
+      <div id="badge" class="badge unknown">—</div>
+    </header>
+
+    <section class="summary">
+      <div id="site" class="site">Aucun rapport</div>
+      <div id="score" class="score"></div>
+    </section>
+
+    <section id="details" class="details hidden">
+      <h3>Détails</h3>
+      <div id="issues" class="issues"></div>
+    </section>
+
+    <footer class="foot">
+      <button id="refresh" class="btn">Analyser maintenant</button>
+      <small>v0.3 • Prototype</small>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
