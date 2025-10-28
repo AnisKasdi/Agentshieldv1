@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AgentShield",
   "version": "0.3",
-  "description": "Scanne une page et signale les risques d'injection/prompt-injection pour navigateurs IA (détection simple, score et détails).",
+  "description": "Scanne une page et signale les risques d'injection pour navigateurs IA.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -12,10 +12,20 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "icons": {
+    "16": "icones/icone128.png",
+    "48": "icones/icone128.png",
+    "128": "icones/icone128.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
   "action": {
+    "default_icon": {
+    "16": "icones/icone128.png",
+    "48": "icones/icone128.png",
+    "128": "icones/icone128.png"
+    },
     "default_popup": "popup/popup.html"
   },
   "content_scripts": [
