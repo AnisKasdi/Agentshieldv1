@@ -9,27 +9,105 @@
 <body>
   <div class="wrap">
     <header class="head">
-      <div>
+      <div class="head-left">
         <h1>AgentShield</h1>
-        <p class="subtitle">IA Safety quick-scan</p>
+        <p class="subtitle">Protection contre les injections IA</p>
       </div>
       <div id="badge" class="badge unknown">—</div>
     </header>
 
     <section class="summary">
       <div id="site" class="site">Aucun rapport</div>
-      <div id="score" class="score"></div>
+      <div id="score" class="score hidden">
+        <div class="score-visual">
+          <div class="score-circle" style="--score-percentage: 0">
+            <span id="scoreNumber" class="score-number">0</span>
+          </div>
+        </div>
+        <div class="score-info">
+          <div class="score-label">Score de sécurité IA</div>
+          <div id="scoreText" class="score-text">Chargement...</div>
+        </div>
+      </div>
     </section>
 
-    <section id="details" class="details hidden">
-      <h3>Détails</h3>
-      <div id="issues" class="issues"></div>
-    </section>
+    <div class="tabs">
+      <button class="tab active" data-tab="details">📋 Détails</button>
+      <button class="tab" data-tab="stats">📊 Stats</button>
+      <button class="tab" data-tab="history">⏱ Historique</button>
+      <button class="tab" data-tab="settings">⚙ Options</button>
+    </div>
+
+    <div class="content">
+      <!-- TAB: DETAILS -->
+      <section id="details" class="tab-content active">
+        <div id="issues" class="issues"></div>
+      </section>
+
+      <!-- TAB: STATS -->
+      <section id="stats" class="tab-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span id="statScans" class="stat-value">0</span>
+            <div class="stat-label">Scans effectués</div>
+          </div>
+          <div class="stat-card">
+            <span id="statAvgScore" class="stat-value">—</span>
+            <div class="stat-label">Score moyen</div>
+          </div>
+          <div class="stat-card">
+            <span id="statSafe" class="stat-value">0</span>
+            <div class="stat-label">Sites sûrs</div>
+          </div>
+          <div class="stat-card">
+            <span id="statRisky" class="stat-value">0</span>
+            <div class="stat-label">Sites à risque</div>
+          </div>
+        </div>
+        <div class="issues">
+          <h4>Détections globales</h4>
+          <ul id="globalStats"></ul>
+        </div>
+      </section>
+
+      <!-- TAB: HISTORY -->
+      <section id="history" class="tab-content">
+        <div id="historyList"></div>
+      </section>
+
+      <!-- TAB: SETTINGS -->
+      <section id="settings" class="tab-content">
+        <div class="settings-section">
+          <div class="settings-title">Whitelist personnalisée</div>
+          <div class="input-group">
+            <input type="text" id="whitelistInput" placeholder="exemple.com" />
+            <button id="addWhitelist" class="btn btn-secondary">Ajouter</button>
+          </div>
+          <div id="whitelistTags"></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-title">Actions</div>
+          <button id="exportReport" class="btn btn-secondary" style="width: 100%">
+            📥 Exporter le rapport (JSON)
+          </button>
+          <button id="clearHistory" class="btn btn-secondary" style="width: 100%; margin-top: 8px">
+            🗑️ Effacer l'historique
+          </button>
+        </div>
+      </section>
+    </div>
 
     <footer class="foot">
-      <button id="refresh" class="btn">Analyser maintenant</button>
-      <small>v0.3 • Prototype</small>
+      <button id="refresh" class="btn btn-primary">
+        <span id="refreshIcon">🔄</span> Analyser
+      </button>
+      <button id="toggleDetails" class="btn btn-secondary btn-icon" title="Afficher/Masquer les détails">
+        👁️
+      </button>
     </footer>
+
+    <small>v0.4 • AgentShield Enhanced</small>
   </div>
 
   <script src="popup.js"></script>
