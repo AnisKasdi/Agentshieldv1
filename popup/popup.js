@@ -108,6 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
       updateStatusTexts(score);
       renderDetails(report);
       
+      saveToHistory(report);
+      
       // Also fetch network details for the active tab
       chrome.runtime.sendMessage({ action: 'getNetworkData', tabId: null }, response => {
           if (response && response.data) renderNetwork(response.data);
@@ -283,6 +285,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   
     // ---- History ----
+    function saveToHistory(report) {
+      if (!report || !report.url) return;
+      try {
+        const domain = new URL(report.url).hostname;
+        chrome.storage.local.get('history', data => {
+          let history = data.history || [];
+          
+          // Remove duplicate URL
+          history = history.filter(h => h.url !== report.url);
+          
+          // Add new report
+          history.unshift({
+            url: report.url,
+            title: report.title,
+            score: report.score,
+            ts: report.ts,
+            domain: domain
+          });
+          
+          // Keep only last 20
+          history = history.slice(0, 20);
+          
+          chrome.storage.local.set({ history });
+        });
+      } catch(e){}
+    }
+  
     function loadHistory() {
       chrome.storage.local.get('history', data => {
         const hist = data.history || [];
@@ -295,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
   
         // Show last 15
-        [...hist].reverse().slice(0, 15).forEach(item => {
+        [...hist].slice(0, 15).forEach(item => {
           const div = document.createElement('div');
           div.className = 'history-item';
           
@@ -303,9 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (item.score < 100) scoreClass = 'score-t-warning';
           if (item.score < 70) scoreClass = 'score-t-danger';
   
+          // Gestion des vieux logs "undefined" sans la clé domain
+          let displayDomain = item.domain;
+          if (!displayDomain && item.url) {
+              try { displayDomain = new URL(item.url).hostname; } catch(e) { displayDomain = item.url; }
+          }
+          if (!displayDomain) displayDomain = "Inconnu";
+  
           div.innerHTML = `
             <div>
-              <div class="history-domain">${item.domain}</div>
+              <div class="history-domain">${displayDomain}</div>
               <div class="history-date">${new Date(item.ts).toLocaleString()}</div>
             </div>
             <div class="history-score ${scoreClass}">${item.score}</div>
