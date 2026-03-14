@@ -1,4 +1,8 @@
-# AgentShield
+<div align="center">
+  <img src="icones/icone128.png" alt="AgentShield Logo" width="128" height="128" />
+  <h1>AgentShield</h1>
+</div>
+
 
 AgentShield is a robust, lightweight, and privacy-focused Chrome Extension designed to detect and mitigate AI prompt injection attacks, malicious hidden text, and data exfiltration attempts in real-time while browsing the web. 
 
