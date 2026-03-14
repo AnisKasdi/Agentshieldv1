@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./icones/icon128.png" alt="AgentShield Logo" width="800" height="800" />
+  <img src="./icones/icon128.png" alt="AgentShield Logo" width="450" height="800" />
   <h1>AgentShield</h1>
 </div>
 
