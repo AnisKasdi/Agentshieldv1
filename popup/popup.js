@@ -159,6 +159,45 @@ document.addEventListener('DOMContentLoaded', () => {
     
     addList('🏷️ Meta/Attributs suspects', report.attrs, a => a.snippet);
 
+    // Fetch and display Network Data
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id;
+      if (tabId) {
+        chrome.runtime.sendMessage({ action: 'getNetworkData', tabId: tabId }, (networkData) => {
+          if (networkData && networkData.requests && networkData.requests.length > 0) {
+            const h2 = document.createElement('h4');
+            h2.textContent = '🌐 Requêtes Réseau (Exfiltration potentielle)';
+            issues.appendChild(h2);
+            const ul = document.createElement('ul');
+            
+            // Fiter for potentially suspicious external requests
+            const suspiciousRequests = networkData.requests.filter(req => {
+               try {
+                   const url = new URL(req.url);
+                   const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+                   const isCommon = url.hostname.includes('google') || url.hostname.includes('youtube') || url.hostname.includes('gstatic');
+                   return !isLocal && !isCommon && req.type !== 'main_frame' && req.type !== 'stylesheet' && req.type !== 'image' && req.type !== 'font';
+               } catch(e) { return false; }
+            });
+
+            if (suspiciousRequests.length === 0) {
+               const emptyState = document.createElement('div');
+               emptyState.className = 'empty-state';
+               emptyState.textContent = 'Aucune requête réseau suspecte détectée en arrière-plan.';
+               issues.appendChild(emptyState);
+            } else {
+              suspiciousRequests.slice(0, 10).forEach(req => {
+                const li = document.createElement('li');
+                li.textContent = `[${req.type.toUpperCase()}] ${req.url.slice(0, 80)}...`;
+                ul.appendChild(li);
+              });
+              issues.appendChild(ul);
+            }
+          }
+        });
+      }
+    });
+
     // Save to history
     saveToHistory(report);
   }
@@ -355,23 +394,28 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh.disabled = true;
     
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tabs || tabs.length === 0) return;
       
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content.js']
+      const tabId = tabs[0].id;
+
+      // Envoyer un message pour demander une réanalyse fraîche au content script déjà injecté
+      chrome.tabs.sendMessage(tabId, { type: 'AGENTSHIELD_TRIGGER_SCAN' }, (response) => {
+        if (chrome.runtime.lastError) {
+          // Si le content script n'est pas injecté (ex: page interne chrome:// ou erreur)
+          console.warn("Script non joignable :", chrome.runtime.lastError.message);
+          render({ error: "Impossible d'analyser cette page (URL non supportée ou script bloqué)." });
+        } else if (response && response.report) {
+          render(response.report);
+        } else {
+          render({ error: "Problème lors de la réanalyse." });
+        }
+        refreshIcon.textContent = '🔄';
+        refresh.disabled = false;
       });
-      
-      setTimeout(() => {
-        chrome.runtime.sendMessage({ type: 'AGENTSHIELD_GET_LAST' }, res => {
-          render(res && res.report ? res.report : null);
-          refreshIcon.textContent = '🔄';
-          refresh.disabled = false;
-        });
-      }, 800);
+
     } catch (e) {
-      console.error('Injection failed:', e);
+      console.error('Trigger scan failed:', e);
       chrome.runtime.sendMessage({ type: 'AGENTSHIELD_GET_LAST' }, res => {
         render(res && res.report ? res.report : null);
         refreshIcon.textContent = '🔄';

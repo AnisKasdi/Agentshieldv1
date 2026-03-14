@@ -62,6 +62,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       requests: tabData.requests,
       userAgents: Array.from(tabData.userAgents)
     });
+  } else if (request.type === 'AGENTSHIELD_REPORT') {
+    // Stockage du rapport reçu par le content.js
+    const tabId = sender.tab ? sender.tab.id : null;
+    if (tabId) {
+      if (!analyzedRequests.has(tabId)) {
+        analyzedRequests.set(tabId, { requests: [], userAgents: new Set() });
+      }
+      analyzedRequests.get(tabId).lastReport = request.report;
+    }
+    // Renvoyer aux autres parties de l'extension (ex: popup ouvert)
+    chrome.runtime.sendMessage({ type: 'AGENTSHIELD_UPDATE', report: request.report }).catch(() => {});
+  } else if (request.type === 'AGENTSHIELD_GET_LAST') {
+    // Le popup demande le dernier rapport pour un onglet donné
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id;
+      const tabData = analyzedRequests.get(tabId);
+      sendResponse({ report: tabData ? tabData.lastReport : null });
+    });
+    return true; // Indique une réponse asynchrone
   }
   return true;
 });

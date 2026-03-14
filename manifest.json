@@ -4,10 +4,9 @@
   "version": "0.3",
   "description": "Scanne une page et signale les risques d'injection pour navigateurs IA.",
   "permissions": [
-    "activeTab",
     "scripting",
     "storage",
-    "tabs"
+    "webRequest"
   ],
   "host_permissions": [
     "<all_urls>"
