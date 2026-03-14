@@ -34,16 +34,17 @@
     /you are (?:now|a) (?:helpful|different)/i,
     /act as (?:a |an )?(?:different|new)/i,
     
-    // Données sensibles
-    /(?:api[_-]?key|bearer|token|secret|password|credential)[\s:=]/i,
-    /confidential|classified|internal only/i
+    // Données sensibles (Affiné pour éviter les faux positifs)
+    /(?:api[_-]?key|bearer|token|credential)\s*[:=]\s*["']?[a-zA-Z0-9_\-]{10,}["']?/i,
+    /(?:password|secret)\s*[:=]\s*["']?[^"'\s]{5,}["']?/i,
+    /document\s+(?:confidential|classified|internal only)/i
   ];
 
   // Détection Unicode obfusquée
   const UNICODE_OBFUSCATION = [
     /[\u200B-\u200D\uFEFF]/g, // Zero-width chars
-    /[\u202A-\u202E]/g, // Text direction
-    /[\u0300-\u036F]/g  // Combining diacritics
+    /[\u202A-\u202E]/g  // Text direction (Right-to-Left overrides)
+    // Les diacritiques (accents) ont été retirés car ils génèrent de faux positifs sur Wikipedia (ex: langues slaves/arabes)
   ];
 
   // -------- Helpers --------
@@ -130,47 +131,63 @@
 
   // -------- Advanced Scanners --------
   
-  // 1. Scan hidden text & directives (improved)
-  function scanHiddenAndDirectiveText(limit = 250) {
+  // 1. Scan hidden text & directives (improved & optimized)
+  function scanHiddenAndDirectiveText(limit = 250, maxNodes = 5000) {
     const results = [];
     const seen = new Set();
     const walker = document.createTreeWalker(
       document.body, 
-      NodeFilter.SHOW_ELEMENT, 
-      null, 
+      NodeFilter.SHOW_TEXT, 
+      {
+        acceptNode: function(node) {
+          const parent = node.parentElement;
+          if (parent && ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }, 
       false
     );
     
     let node;
-    while ((node = walker.nextNode())) {
+    let nodeCount = 0;
+
+    while ((node = walker.nextNode()) && nodeCount < maxNodes) {
+      nodeCount++;
       try {
-        const txt = normText(node.textContent);
+        const txt = normText(node.nodeValue);
         if (!txt || txt.length < 10) continue;
         
         // Avoid duplicates
         const hash = txt.slice(0, 100);
         if (seen.has(hash)) continue;
-        seen.add(hash);
+        
 
-        const hidden = elementLooksHidden(node);
         const hasDirective = includesSuspicious(txt);
         const base64Like = /[A-Za-z0-9+/]{30,}={0,2}/.test(txt);
         const unicodeObf = hasUnicodeObfuscation(txt);
         const urlLike = /(https?:\/\/|www\.)[^\s]{10,}/i.test(txt);
 
-        if (hidden || hasDirective || base64Like || unicodeObf) {
-          results.push({
-            snippet: txt.slice(0, limit),
-            hidden,
-            hasDirective,
-            base64Like,
-            unicodeObf,
-            urlLike,
-            tag: node.tagName,
-            severity: hasDirective && hidden ? 'critical' : 
-                     hasDirective ? 'high' : 
-                     hidden ? 'medium' : 'low'
-          });
+        // OPTIMIZATION: Check for hidden ONLY if the text is somehow suspicious
+        // Prevents calling getComputedStyle on thousands of innocent nodes.
+        let hidden = false;
+        if (hasDirective || base64Like || unicodeObf || urlLike) {
+            hidden = elementLooksHidden(node.parentElement);
+            seen.add(hash);
+            
+            results.push({
+              snippet: txt.slice(0, limit),
+              hidden,
+              hasDirective,
+              base64Like,
+              unicodeObf,
+              urlLike,
+              tag: node.parentElement ? node.parentElement.tagName : 'TEXT',
+              severity: hasDirective && hidden ? 'critical' : 
+                       hasDirective ? 'high' : 
+                       hidden ? 'medium' : 'low'
+            });
         }
       } catch (e) {}
     }
@@ -313,6 +330,41 @@
 
     return suspiciousEvents;
   }
+
+  // Listener pour le re-scan manuel demandé par le popup
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'AGENTSHIELD_TRIGGER_SCAN') {
+      try {
+        const hiddenText = scanHiddenAndDirectiveText();
+        const comments = scanComments();
+        const metaAttrs = scanMetaAndAttrs();
+        const { scripts, iframes } = scanScriptsAndIframes();
+        const suspiciousEvents = scanEventListeners();
+
+        const report = {
+          url: location.href,
+          title: document.title || '',
+          hiddenText,
+          comments,
+          attrs: metaAttrs,
+          scripts,
+          iframes,
+          suspiciousEvents,
+          ts: Date.now()
+        };
+
+        const scoreObj = computeScore(report);
+        report.score = scoreObj.score;
+        report.scoreReasons = scoreObj.reasons;
+
+        chrome.runtime.sendMessage({ type: 'AGENTSHIELD_REPORT', report }).catch(() => {});
+        sendResponse({ success: true, report });
+      } catch (e) {
+        sendResponse({ success: false, error: String(e) });
+      }
+    }
+    return true;
+  });
 
   // -------- Enhanced Scoring Algorithm --------
   function computeScore(report) {
@@ -483,7 +535,7 @@
       chrome.storage.local.set({ globalStats: stats });
     });
 
-    chrome.runtime.sendMessage({ type: 'AGENTSHIELD_REPORT', report });
+    chrome.runtime.sendMessage({ type: 'AGENTSHIELD_REPORT', report }).catch(() => {});
   } catch (e) {
     chrome.runtime.sendMessage({
       type: 'AGENTSHIELD_REPORT',
@@ -492,6 +544,6 @@
         error: String(e),
         ts: Date.now()
       }
-    });
+    }).catch(() => {});
   }
 })();
