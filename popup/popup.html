@@ -7,109 +7,98 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="wrap">
-    <header class="head">
-      <div class="head-left">
-        <h1>AgentShield</h1>
-        <p class="subtitle">Protection contre les injections IA</p>
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1 class="brand-name">AgentShield</h1>
       </div>
-      <div id="badge" class="badge unknown">—</div>
+      <div id="badgeStatus" class="status-badge pulse-safe">Sûr</div>
     </header>
 
-    <section class="summary">
-      <div id="site" class="site">Aucun rapport</div>
-      <div id="score" class="score hidden">
-        <div class="score-visual">
-          <div class="score-circle" style="--score-percentage: 0">
-            <span id="scoreNumber" class="score-number">0</span>
-          </div>
-        </div>
-        <div class="score-info">
-          <div class="score-label">Score de sécurité IA</div>
-          <div id="scoreText" class="score-text">Chargement...</div>
+    <!-- HERO SCORE -->
+    <main class="hero">
+      <div class="score-container">
+        <svg class="progress-ring" viewBox="0 0 120 120">
+          <circle class="progress-ring__bg" cx="60" cy="60" r="54" />
+          <circle class="progress-ring__circle progress-safe" cx="60" cy="60" r="54" />
+        </svg>
+        <div class="score-content">
+          <span id="scoreNumber" class="score-number">100</span>
+          <span class="score-max">/100</span>
         </div>
       </div>
-    </section>
+      <div class="site-info">
+        <h2 id="siteUrl" class="site-url">google.com</h2>
+        <p id="scoreMessage" class="score-message">Aucune menace détectée</p>
+      </div>
+    </main>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="details">📋 Détails</button>
-      <button class="tab" data-tab="stats">📊 Stats</button>
-      <button class="tab" data-tab="history">⏱ Historique</button>
-      <button class="tab" data-tab="settings">⚙ Options</button>
+    <!-- NAVIGATION PILLS -->
+    <nav class="nav-pills">
+      <button class="nav-btn active" data-tab="details">Sécurité</button>
+      <button class="nav-btn" data-tab="history">Historique</button>
+      <button class="nav-btn" data-tab="settings">Préférences</button>
+    </nav>
+
+    <!-- CONTENT SECTIONS -->
+    <div class="content-area">
+      
+      <!-- DETAILS TAB -->
+      <section id="details" class="tab-pane active">
+        <div id="threatList" class="threat-list">
+          <!-- Filled dynamically by JS -->
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <p>Environnement Sain</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY TAB -->
+      <section id="history" class="tab-pane">
+        <div id="historyList" class="history-list">
+          <!-- Filled dynamically -->
+        </div>
+      </section>
+
+      <!-- SETTINGS TAB -->
+      <section id="settings" class="tab-pane">
+        <div class="setting-group">
+          <h3>Liste Blanche (Domaines)</h3>
+          <div class="input-wrapper">
+            <input type="text" id="whitelistInput" placeholder="ex: mon-site.com" />
+            <button id="addWhitelistBtn" class="btn-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+          <div id="whitelistTags" class="tags-container"></div>
+        </div>
+
+        <div class="setting-actions">
+          <button id="exportBtn" class="btn-outline">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Exporter JSON
+          </button>
+          <button id="clearBtn" class="btn-text text-danger">Effacer l'historique</button>
+        </div>
+      </section>
+
     </div>
 
-    <div class="content">
-      <!-- TAB: DETAILS -->
-      <section id="details" class="tab-content active">
-        <div id="issues" class="issues"></div>
-      </section>
-
-      <!-- TAB: STATS -->
-      <section id="stats" class="tab-content">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span id="statScans" class="stat-value">0</span>
-            <div class="stat-label">Scans effectués</div>
-          </div>
-          <div class="stat-card">
-            <span id="statAvgScore" class="stat-value">—</span>
-            <div class="stat-label">Score moyen</div>
-          </div>
-          <div class="stat-card">
-            <span id="statSafe" class="stat-value">0</span>
-            <div class="stat-label">Sites sûrs</div>
-          </div>
-          <div class="stat-card">
-            <span id="statRisky" class="stat-value">0</span>
-            <div class="stat-label">Sites à risque</div>
-          </div>
-        </div>
-        <div class="issues">
-          <h4>Détections globales</h4>
-          <ul id="globalStats"></ul>
-        </div>
-      </section>
-
-      <!-- TAB: HISTORY -->
-      <section id="history" class="tab-content">
-        <div id="historyList"></div>
-      </section>
-
-      <!-- TAB: SETTINGS -->
-      <section id="settings" class="tab-content">
-        <div class="settings-section">
-          <div class="settings-title">Whitelist personnalisée</div>
-          <div class="input-group">
-            <input type="text" id="whitelistInput" placeholder="exemple.com" />
-            <button id="addWhitelist" class="btn btn-secondary">Ajouter</button>
-          </div>
-          <div id="whitelistTags"></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-title">Actions</div>
-          <button id="exportReport" class="btn btn-secondary" style="width: 100%">
-            📥 Exporter le rapport (JSON)
-          </button>
-          <button id="clearHistory" class="btn btn-secondary" style="width: 100%; margin-top: 8px">
-            🗑️ Effacer l'historique
-          </button>
-        </div>
-      </section>
-    </div>
-
-    <footer class="foot">
-      <button id="refresh" class="btn btn-primary">
-        <span id="refreshIcon">🔄</span> Analyser
-      </button>
-      <button id="toggleDetails" class="btn btn-secondary btn-icon" title="Afficher/Masquer les détails">
-        👁️
+    <!-- FOOTER CONTROLS -->
+    <footer class="footer">
+      <button id="rescanBtn" class="btn-primary">
+        <svg class="spin-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        <span>Analyser la page</span>
       </button>
     </footer>
 
-    <small>v0.4 • AgentShield Enhanced</small>
   </div>
-
   <script src="popup.js"></script>
 </body>
 </html>
